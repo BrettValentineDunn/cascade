@@ -1,0 +1,46 @@
+{
+  "name": "cascade",
+  "version": "0.1.0",
+  "description": "The change cascade: what else has to change, decisions, journeys, facts and the checklist loop, for any repository.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "cascade": "bin/cascade.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": { "types": "./src/index.d.ts", "default": "./src/index.mjs" },
+    "./config": { "types": "./src/config.d.ts", "default": "./src/config.mjs" },
+    "./impact": { "types": "./src/impact.d.ts", "default": "./src/impact.mjs" },
+    "./decisions": { "types": "./src/decisions.d.ts", "default": "./src/decisions.mjs" },
+    "./decisions-cli": { "types": "./src/decisions-cli.d.ts", "default": "./src/decisions-cli.mjs" },
+    "./checklist": { "types": "./src/checklist.d.ts", "default": "./src/checklist.mjs" },
+    "./feature-coverage": { "types": "./src/feature-coverage.d.ts", "default": "./src/feature-coverage.mjs" },
+    "./copy-claims": { "types": "./src/copy-claims.d.ts", "default": "./src/copy-claims.mjs" },
+    "./quick-tests": { "types": "./src/quick-tests.d.ts", "default": "./src/quick-tests.mjs" },
+    "./journeys": { "types": "./src/journeys.d.ts", "default": "./src/journeys.mjs" },
+    "./surfaces": { "types": "./src/surfaces.d.ts", "default": "./src/surfaces.mjs" },
+    "./mirror": { "types": "./src/mirror.d.ts", "default": "./src/mirror.mjs" },
+    "./facts": { "types": "./src/facts.d.ts", "default": "./src/facts.mjs" },
+    "./glob": { "types": "./src/glob.d.ts", "default": "./src/glob.mjs" },
+    "./vitest": { "types": "./src/vitest.d.ts", "default": "./src/vitest.mjs" }
+  },
+  "peerDependencies": {
+    "vitest": ">=1"
+  },
+  "peerDependenciesMeta": {
+    "vitest": { "optional": true }
+  },
+  "scripts": {
+    "test": "node --test test/cli.test.mjs test/purity.test.mjs"
+  }
+}
