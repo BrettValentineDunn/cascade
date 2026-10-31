@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 (2026-10-31)
+
+- Type declarations for `cascade/checklist`: `archiveText`, `repairEncoding` and
+  `longOpenItems` return their real shapes, so strict TypeScript callers compile.
+
 ## 0.1.0 (2026-10-31)
 
 The engine, moved out of the first project to use it with identical output.

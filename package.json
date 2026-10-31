@@ -1,6 +1,6 @@
 {
   "name": "cascade",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The change cascade: what else has to change, decisions, journeys, facts and the checklist loop, for any repository.",
   "license": "UNLICENSED",
   "private": true,
