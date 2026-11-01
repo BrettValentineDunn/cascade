@@ -21,6 +21,7 @@ export default {
   checklist: { file: 'docs/CHECKLIST.md', log: 'docs/LOG.md', warnAt: 1024 * 1024 },
   from: { cascade: '2000-01-01', journeys: '2000-01-01', decisions: '2000-01-01' },
   approver: 'owner',
+  lateVerdicts: 'docs/late-verdicts.md',
   map: 'scripts/map.mjs',
   journeys: 'scripts/journeys.mjs#JOURNEYS',
   decisions: { roots: ['src'], tests: ['tests'], index: 'docs/decisions.md', skip: [] },

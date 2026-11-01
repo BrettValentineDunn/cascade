@@ -75,6 +75,39 @@ describe('check-commits', () => {
     assert.match(good.out, /Cascade OK/)
   })
 
+  it('reads a verdict wrapped over several lines', () => {
+    const p = project(FULL)
+    const start = p.git('rev-parse', 'HEAD')
+    p.commit({ 'src/billing/total.js': 'export const total = 1\n' },
+      'add a total\n\nCascade:\n- billing: reviewed 2 surface(s),\n  still true\n- journeys:\n  J-01: walked on UAT\n')
+    const r = p.cascade('check-commits', `${start}..HEAD`)
+    assert.equal(r.code, 0, r.err)
+  })
+
+  it('honours a late verdict for a commit already pushed, and says so', () => {
+    const p = project(FULL)
+    const start = p.git('rev-parse', 'HEAD')
+    p.commit({ 'src/billing/total.js': 'export const total = 1\n' }, 'add a total')
+    const sha = p.git('rev-parse', 'HEAD')
+    const entry = (body) => p.write({ 'docs/late-verdicts.md': `# Late verdicts\n\n## ${sha} add a total\n\n${body}` })
+
+    entry('Why late: the map gained billing after it was written.\n\nCascade:\n- billing: reviewed 2 surface(s), still true\n- journeys: J-01: walked on UAT\n')
+    const good = p.cascade('check-commits', `${start}..HEAD`)
+    assert.equal(good.code, 0, good.err)
+    assert.match(good.out, /1 commit\(s\) pass by a late verdict in docs\/late-verdicts\.md:/)
+    assert.match(good.out, /why late: the map gained billing after it was written\./)
+
+    entry('Cascade:\n- billing: reviewed 2 surface(s), still true\n- journeys: J-01: walked on UAT\n')
+    const noWhy = p.cascade('check-commits', `${start}..HEAD`)
+    assert.equal(noWhy.code, 1)
+    assert.match(noWhy.err, /its late verdict in docs\/late-verdicts\.md is not read: it has no Why late: line/)
+
+    entry('Why late: the map gained billing.\n\nCascade:\n- billing: reviewed 2 surface(s), still true\n')
+    const short = p.cascade('check-commits', `${start}..HEAD`)
+    assert.equal(short.code, 1)
+    assert.match(short.err, /has no journeys verdict \(it passes through J-01\) \(with its late verdict in docs\/late-verdicts\.md\)/)
+  })
+
   it('needs the approver quoted when a commit rewords a decision', () => {
     const p = project(FULL)
     const start = p.git('rev-parse', 'HEAD')

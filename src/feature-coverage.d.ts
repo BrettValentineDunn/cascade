@@ -16,4 +16,5 @@ export function releaseCoverageProblems(
   facts: RepoFacts,
   options: { from: string; exempt?: string[] },
 ): string[]
+export function cascadeBlock(message: string): string[] | null
 export function cascadeMessageProblems(message: string, areaIds: string[], journeyIds?: string[]): string[]

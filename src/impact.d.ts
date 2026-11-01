@@ -22,4 +22,9 @@ export function mobileReleaseStatus(root?: string): string | null
 export const CASCADE_FROM: string | null
 export const JOURNEYS_FROM: string | null
 export function commitCascadeProblems(range: string, root?: string, from?: string | null): { sha: string; subject: string; problems: string[] }[]
+export function commitCascadeReport(range: string, root?: string, from?: string | null): {
+  problems: { sha: string; subject: string; problems: string[] }[]
+  late: { sha: string; subject: string; why: string }[]
+}
+export function lateVerdicts(root?: string): Map<string, { why: string; block: string[] } | { error: string }>
 export function main(argv: string[]): void

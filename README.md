@@ -8,7 +8,11 @@ The change cascade, for any repository: no change ships alone.
   decisions next to each hunk and the journeys it passes through, then a
   `Cascade:` block to paste into the commit message.
 - **check-commits**: every commit in a range that touches an area carries its
-  filled-in verdicts. Run it before a push and over a release.
+  filled-in verdicts. Run it before a push and over a release. A pushed commit
+  cannot be reworded, so one that owes a verdict (the map gained its files after
+  it was written, say) gets a late verdict in the `lateVerdicts` file instead:
+  `## <full sha> <subject>`, a `Why late:` line, then its `Cascade:` block. The
+  check names every commit that passes only by one.
 - **decisions**: `// DECISION(<ID>): <rule> — <why> (<who>, <YYYY-MM-DD>)` beside
   behaviour that is there on purpose, a test whose title names `DECISION(<ID>)`,
   and a generated index. A commit that rewords a marker must quote who approved it.
@@ -20,7 +24,7 @@ The change cascade, for any repository: no change ships alone.
 ## Install
 
 ```bash
-npm i -D github:BrettValentineDunn/cascade#v0.1.2
+npm i -D github:BrettValentineDunn/cascade#v0.1.3
 ```
 
 Then add `cascade.config.mjs` at the repository root. Every section is optional:
@@ -34,6 +38,7 @@ export default defineConfig({
   // Commits before these days are never held to a rule that did not exist yet.
   from: { cascade: '2026-11-01', journeys: '2026-11-01', decisions: '2026-11-01' },
   approver: 'owner',
+  lateVerdicts: 'docs/late-verdicts.md',        // verdicts owed by commits already pushed
   map: 'scripts/impact-map.mjs',                 // AREAS, HUBS, SCREEN_PAIRS, NATIVE_BUILD_TRIGGERS
   journeys: 'scripts/journeys.mjs#JOURNEYS',
   decisions: { roots: ['src'], tests: ['tests'], index: 'docs/decisions.md' },

@@ -24,6 +24,7 @@ import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import config, { listWords } from './config.mjs'
+import { cascadeBlock } from './feature-coverage.mjs'
 
 export const DECISION_ROOTS = config.decisions.roots
 export const TEST_ROOTS = config.decisions.tests
@@ -408,14 +409,8 @@ function findId(line, id) {
 export function decisionMessageProblems(message, { touched, removed = [] }) {
   const ids = [...new Set([...touched, ...removed].map((m) => m.id))]
   if (!ids.length) return []
-  const lines = message.split(/\r?\n/)
-  const start = lines.findIndex((l) => /^Cascade:\s*$/.test(l.trim()))
-  if (start < 0) return [`no Cascade: block (it changes code marked DECISION ${ids.join(', ')}; run npx cascade impact)`]
-  const block = []
-  for (const l of lines.slice(start + 1)) {
-    if (!l.trim()) break
-    block.push(l.trim())
-  }
+  const block = cascadeBlock(message)
+  if (!block) return [`no Cascade: block (it changes code marked DECISION ${ids.join(', ')}; run npx cascade impact)`]
   const line = block.find((l) => l.startsWith('- decisions:'))
   if (!line) return [`Cascade: has no decisions verdict (it changes code marked DECISION ${ids.join(', ')})`]
   if (PLACEHOLDER.test(line)) return ['Cascade: decisions verdict is not filled in']

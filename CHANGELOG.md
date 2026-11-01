@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.3 (2026-11-01)
+
+- `check-commits` reads a verdict wrapped over several lines: a line in the
+  `Cascade:` block that does not start `- ` carries on the one above (a journeys
+  verdict wrapped after its first line lost the ids on the next).
+- Late verdicts: config `lateVerdicts` names a committed file recording the
+  verdicts a pushed commit owes, by full sha, each with why it is late. A commit
+  whose own message falls short passes when its message and its late verdict
+  together cover it, and `check-commits` lists each one that does
+  (`commitCascadeReport` returns them as `late`). A late verdict without a
+  `Why late:` line is refused.
+
 ## 0.1.2 (2026-11-01)
 
 - `decisions` and the surface walk list files in byte order, so the index comes out

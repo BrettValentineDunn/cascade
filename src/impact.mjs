@@ -37,7 +37,7 @@ import {
   DECISIONS_FROM,
 } from './decisions.mjs'
 import config, { fileOf, load } from './config.mjs'
-import { cascadeMessageProblems } from './feature-coverage.mjs'
+import { cascadeBlock, cascadeMessageProblems } from './feature-coverage.mjs'
 import { journeysForAreas } from './journeys.mjs'
 
 // The project's map, live surfaces and shared modules (cascade.config.mjs); each optional.
@@ -382,7 +382,49 @@ const RELEASE_NOTES_DATA = config.releaseNotes
  * [{ sha, subject, problems }].
  */
 export function commitCascadeProblems(range, root = process.cwd(), from = CASCADE_FROM) {
-  if (!from) return []
+  return commitCascadeReport(range, root, from).problems
+}
+
+/**
+ * The late verdicts recorded in config lateVerdicts, by full sha: a commit already
+ * pushed cannot be reworded, so a verdict it owes (the map gained its files after it
+ * was written, say) is recorded there instead, with why it is late.
+ * `## <full sha> <subject>`, a `Why late:` line, then a Cascade: block.
+ * @returns {Map<string, { why: string, block: string[] } | { error: string }>}
+ */
+export function lateVerdicts(root = process.cwd()) {
+  const out = new Map()
+  if (!config.lateVerdicts) return out
+  let text
+  try {
+    text = readFileSync(path.join(root, config.lateVerdicts), 'utf8')
+  } catch {
+    return out
+  }
+  for (const part of text.split(/^(?=## [0-9a-f]{40}\b)/m).slice(1)) {
+    const sha = part.slice(3, 43)
+    const why = part.match(/^Why late:(.*)$/m)?.[1].trim()
+    const block = cascadeBlock(part)
+    if (!why) out.set(sha, { error: 'it has no Why late: line' })
+    else if (!block?.length) out.set(sha, { error: 'it has no Cascade: block' })
+    else out.set(sha, { why, block })
+  }
+  return out
+}
+
+/** The message with a late verdict's lines added to its Cascade: block. */
+function withLateVerdict(message, block) {
+  return `Cascade:\n${[...(cascadeBlock(message) ?? []), ...block].join('\n')}\n`
+}
+
+/**
+ * commitCascadeProblems, plus the commits that pass only by a late verdict, as
+ * [{ sha, subject, why }], so the caller can say so.
+ */
+export function commitCascadeReport(range, root = process.cwd(), from = CASCADE_FROM) {
+  const late = []
+  if (!from) return { problems: [], late }
+  const recorded = lateVerdicts(root)
   // Not git(): an unknown range must fail loudly, never pass as "no commits".
   const shas = execFileSync('git', ['log', '--no-merges', '--reverse', `--since=${from}T00:00:00`, '--format=%H', range, '--'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
     .split('\n').map((l) => l.trim()).filter(Boolean)
@@ -397,13 +439,24 @@ export function commitCascadeProblems(range, root = process.cwd(), from = CASCAD
     const day = git(['log', '-1', '--format=%cs', sha], root)
     const journeyIds = JOURNEYS_FROM && day >= JOURNEYS_FROM ? journeysForAreas(areas.map((a) => a.id)).map((j) => j.id) : []
     const message = git(['log', '-1', '--format=%B', sha], root)
-    const problems = cascadeMessageProblems(message, areas.map((a) => a.id), journeyIds)
-    // A commit that changes marked code says it kept each decision, or quotes who
-    // changed it (decisions.mjs).
-    if (DECISIONS_FROM && day >= DECISIONS_FROM) problems.push(...decisionMessageProblems(message, decisionsInCommit(sha, root)))
+    const decisions = DECISIONS_FROM && day >= DECISIONS_FROM ? decisionsInCommit(sha, root) : null
+    const problemsOf = (m) => [
+      ...cascadeMessageProblems(m, areas.map((a) => a.id), journeyIds),
+      // A commit that changes marked code says it kept each decision, or quotes who
+      // changed it (decisions.mjs).
+      ...(decisions ? decisionMessageProblems(m, decisions) : []),
+    ]
+    let problems = problemsOf(message)
+    const entry = problems.length ? recorded.get(sha) : null
+    if (entry && 'error' in entry) problems.push(`its late verdict in ${config.lateVerdicts} is not read: ${entry.error}`)
+    else if (entry) {
+      const after = problemsOf(withLateVerdict(message, entry.block))
+      if (!after.length) late.push({ sha, subject: git(['log', '-1', '--format=%s', sha], root), why: entry.why })
+      problems = after.map((p) => `${p} (with its late verdict in ${config.lateVerdicts})`)
+    }
     if (problems.length) out.push({ sha, subject: git(['log', '-1', '--format=%s', sha], root), problems })
   }
-  return out
+  return { problems: out, late }
 }
 
 export function main(argv) {
@@ -412,16 +465,20 @@ export function main(argv) {
   const args = argv.filter((a) => a !== '--json')
   if (args[0] === '--check-commits') {
     const range = args[1] ?? 'origin/main..HEAD'
-    let bad
+    let bad, late
     try {
-      bad = commitCascadeProblems(range, root)
+      ;({ problems: bad, late } = commitCascadeReport(range, root))
     } catch (e) {
       console.error(`Cannot read the commits in ${range}: ${String(e.stderr || e.message).trim()}`)
       process.exit(2)
     }
     if (json) console.log(JSON.stringify(bad, null, 2))
     else if (!bad.length) console.log(`Cascade OK: every commit in ${range} that touches an area has its verdict.`)
-    else {
+    if (!json && late.length) {
+      console.log(`${late.length} commit(s) pass by a late verdict in ${config.lateVerdicts}:`)
+      for (const l of late) console.log(`  ${l.sha.slice(0, 7)} ${l.subject}\n    why late: ${l.why}`)
+    }
+    if (!json && bad.length) {
       console.error(`Cascade missing in ${bad.length} commit(s) of ${range} (reword before pushing; run npx cascade impact <files> for the block):`)
       for (const b of bad) console.error(`  ${b.sha.slice(0, 7)} ${b.subject}\n    - ${b.problems.join('\n    - ')}`)
     }

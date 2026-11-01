@@ -14,6 +14,7 @@ export function withDefaults(raw = {}) {
     journeys: raw.journeys ?? null,
     facts: raw.facts ?? null,
     releaseNotes: raw.releaseNotes ?? [],
+    lateVerdicts: raw.lateVerdicts ?? null,
     surfaces: {
       ...surfaces,
       kinds: surfaces.kinds ?? {},

@@ -15,6 +15,7 @@ const CHECKS = [
   ['copyClaims', 'outcome claims in user copy', (c) => c.copyClaims.registry],
   ['quickTests', 'quick test selection', (c) => c.quickTests.sources.length],
   ['mobile', 'web/native parity, shared-rule mirror, OTA or build', (c) => c.mobile],
+  ['lateVerdicts', 'late verdicts for commits already pushed', (c) => c.lateVerdicts],
 ]
 
 export function main() {

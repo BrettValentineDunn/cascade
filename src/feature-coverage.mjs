@@ -124,6 +124,24 @@ export function releaseCoverageProblems(releases, facts, { from, exempt = [] }) 
 const PLACEHOLDER = /<(?:which|decision|why)>/
 
 /**
+ * The lines of a commit message's Cascade: block, trimmed, or null when it has none.
+ * The block runs to the first blank line. A line that does not start `- ` carries on
+ * the verdict above it, so a verdict wrapped over several lines is read whole.
+ */
+export function cascadeBlock(message) {
+  const lines = message.split(/\r?\n/)
+  const start = lines.findIndex((l) => /^Cascade:\s*$/.test(l.trim()))
+  if (start < 0) return null
+  const block = []
+  for (const l of lines.slice(start + 1)) {
+    if (!l.trim()) break
+    if (block.length && !l.trim().startsWith('- ')) block[block.length - 1] += ` ${l.trim()}`
+    else block.push(l.trim())
+  }
+  return block
+}
+
+/**
  * Why a commit message's Cascade: block does not cover the areas the commit touches,
  * as a list (empty when it does). One `- <area>: <verdict>` line per area, filled in.
  * With `journeyIds` (UAT-WALK, 2026-10-27), one `- journeys: <verdict>` line too,
@@ -132,14 +150,8 @@ const PLACEHOLDER = /<(?:which|decision|why)>/
  */
 export function cascadeMessageProblems(message, areaIds, journeyIds = []) {
   if (!areaIds.length) return []
-  const lines = message.split(/\r?\n/)
-  const start = lines.findIndex((l) => /^Cascade:\s*$/.test(l.trim()))
-  if (start < 0) return [`no Cascade: block (it touches ${areaIds.join(', ')}; run npx cascade impact)`]
-  const block = []
-  for (const l of lines.slice(start + 1)) {
-    if (!l.trim()) break
-    block.push(l.trim())
-  }
+  const block = cascadeBlock(message)
+  if (!block) return [`no Cascade: block (it touches ${areaIds.join(', ')}; run npx cascade impact)`]
   const problems = []
   for (const id of areaIds) {
     const line = block.find((l) => l.startsWith(`- ${id}:`))
@@ -147,7 +159,8 @@ export function cascadeMessageProblems(message, areaIds, journeyIds = []) {
     else if (PLACEHOLDER.test(line) || !line.slice(id.length + 3).trim()) problems.push(`Cascade: verdict for ${id} is not filled in`)
   }
   if (journeyIds.length) {
-    const line = block.find((l) => l.startsWith('- journeys:'))
+    // A late verdict (impact.mjs) adds a second journeys line: both count.
+    const line = block.filter((l) => l.startsWith('- journeys:')).join(' ')
     if (!line) problems.push(`Cascade: has no journeys verdict (it passes through ${journeyIds.join(', ')})`)
     else if (PLACEHOLDER.test(line) || !line.slice('- journeys:'.length).trim()) problems.push('Cascade: journeys verdict is not filled in')
     else {
