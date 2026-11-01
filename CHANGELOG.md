@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 (2026-11-01)
+
+- `decisions` and the surface walk list files in byte order, so the index comes out
+  the same on every file system (NTFS and ext4 list a folder differently, and a
+  decision anchored in two folders showed its files in a different order on a
+  Linux runner).
+
 ## 0.1.1 (2026-10-31)
 
 - Type declarations for `cascade/checklist`: `archiveText`, `repairEncoding` and

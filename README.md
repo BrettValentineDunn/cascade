@@ -20,7 +20,7 @@ The change cascade, for any repository: no change ships alone.
 ## Install
 
 ```bash
-npm i -D github:BrettValentineDunn/cascade#v0.1.1
+npm i -D github:BrettValentineDunn/cascade#v0.1.2
 ```
 
 Then add `cascade.config.mjs` at the repository root. Every section is optional:

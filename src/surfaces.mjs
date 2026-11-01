@@ -35,7 +35,8 @@ export function liveSurfaces({ roots, files = [], skip = [], classified = [], do
     } catch {
       return out
     }
-    for (const e of entries) {
+    // Byte order, so every file system lists the same surfaces in the same order.
+    for (const e of entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
       const child = rel ? `${rel}/${e.name}` : e.name
       if (skipPaths.has(child)) continue
       if (e.isDirectory()) {

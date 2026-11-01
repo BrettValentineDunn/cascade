@@ -106,6 +106,19 @@ describe('decisions', () => {
     assert.match(check.err, /DECISION\(TAX-1\) at src\/billing\/tax\.js:1 has no test/)
   })
 
+  it('orders the index by file in byte order, whatever order the file system lists', () => {
+    const p = project(FULL)
+    // NTFS lists job/ before [id]/ (it compares upper-cased names), ext4 by hash; bytes put [ first.
+    p.write({
+      'src/app/job/edit.js': '// DECISION(ORDER-1): one rule in two screens — kept the same (owner, 2026-01-03)\n',
+      'src/app/[id]/view.js': '\n// DECISION(ORDER-1): one rule in two screens — kept the same (owner, 2026-01-03)\n',
+      'tests/order.test.js': "it('DECISION(ORDER-1) holds', () => {})\n",
+    })
+    assert.equal(p.cascade('decisions').code, 0)
+    const row = readFileSync(path.join(p.dir, 'docs/decisions.md'), 'utf8').split('\n').find((l) => l.startsWith('| ORDER-1 '))
+    assert.match(row, /`src\/app\/\[id\]\/view\.js:2`<br>`src\/app\/job\/edit\.js:1`/)
+  })
+
   it('looks up a proposed change before any code is written', () => {
     const p = project(FULL)
     p.write({ 'proposal.txt': 'Show prices with pence | src/billing/price.js\n' })

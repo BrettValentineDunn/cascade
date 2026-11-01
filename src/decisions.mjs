@@ -114,6 +114,10 @@ export function parseMarkers(text, file = '') {
 
 // ── The tree ─────────────────────────────────────────────────────────────────
 
+// Byte order, not locale or the file system's: NTFS and ext4 list a folder differently, and the
+// index must come out the same on Windows and on a Linux runner.
+const byPath = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+
 function walk(root, rel, test, out = []) {
   let entries
   try {
@@ -121,7 +125,7 @@ function walk(root, rel, test, out = []) {
   } catch {
     return out
   }
-  for (const e of entries) {
+  for (const e of entries.sort((a, b) => byPath(a.name, b.name))) {
     const child = `${rel}/${e.name}`
     if (e.isDirectory()) {
       if (!SKIP_DIRS.has(e.name) && !SKIP_PATHS.has(child)) walk(root, child, test, out)
@@ -143,7 +147,8 @@ export function scanMarkers(root = process.cwd(), read = (f) => readFileSync(pat
       malformed.push(...parsed.malformed)
     }
   }
-  return { markers, malformed }
+  const order = (a, b) => byPath(a.file, b.file) || a.line - b.line
+  return { markers: markers.sort(order), malformed: malformed.sort(order) }
 }
 
 const TITLE = /\b(?:it|test)(?:\.(?:skip|only|todo|concurrent|fails))?\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g
